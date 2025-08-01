@@ -98,3 +98,27 @@ COLOR_DEFINITIONS = [
     {"name": "Pink", "lower": [np.array([140, 80, 80])], "upper": [np.array([170, 255, 255])], "threshold": 5000},
 
 ]
+
+# Video capture thread
+class VideoThread(QThread):
+    change_pixmap_signal = pyqtSignal(QPixmap, np.ndarray)
+
+    def run(self):
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("Error: Could not open camera.")
+            return
+        
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        while True:
+            ret, frame = self.cap.read()
+            if ret:
+                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb_image.shape
+                bytes_per_line = ch * w
+                convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+                p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
+                self.change_pixmap_signal.emit(QPixmap.fromImage(p), frame)
+            time.sleep(0.03)         # limiting frame rate to ~30 FPS
