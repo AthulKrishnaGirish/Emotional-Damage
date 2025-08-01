@@ -2,175 +2,99 @@ import sys
 import cv2
 import random
 import numpy as np
-from PyQt6.QtCore import QThread, pyqtSignal, QTimer, Qt
+from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from PyQt6.QtGui import QImage, QPixmap, QFont
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton, QGridLayout
+    QHBoxLayout, QLabel, QPushButton
 )
 import time
 
-#list of emotions
-emotions = [
+#list of emotions connected to the colour detected
+EMOTION_PROFILES = [
     {
-        "name": "Zen Tranquility",
-        "color": "#2EE712",
-        "reason": "It simply is, in perfect harmony with the universe.",
+        "color_name": "Red",
+        "name": "Fiery Passion",
+        "color": "#FF2400",
+        "reason": "As a red object, it's bursting with raw, untamed energy and excitement!",
+        "icon": "🔥"
+    },
+    {
+        "color_name": "Yellow",
+        "name": "Sunshine Giggles",
+        "color": "#FFFF00",
+        "reason": "This yellow object is literally radiating pure, unfiltered happiness and optimism.",
+        "icon": "😂"
+    },
+    {
+        "color_name": "Green",
+        "name": "Zen Master",
+        "color": "#23DE06",
+        "reason": "Feeling the deep, tranquil vibes of nature, this green object is totally at peace.",
         "icon": "🧘"
     },
     {
-        "name": "Mild Annoyance",
-        "color": "#81532E",
-        "reason": "Someone touched it with sticky fingers just moments ago.",
-        "icon": "😒"
-    },
-    {
-        "name": "Profound Curiosity",
-        "color": "#4333AD",
-        "reason": "It wonders about the mysteries beyond its immediate existence.",
+        "color_name": "Blue",
+        "name": "Cosmic Wonder",
+        "color": "#4169E1",
+        "reason": "This blue object is contemplating the vast mysteries of the universe and feeling profound.",
         "icon": "🤔"
     },
     {
-        "name": "Unbridled Enthusiasm",
-        "color": "#C94832",
-        "reason": "It just remembered it's Friday somewhere in the world!",
-        "icon": "🤩"
+        "color_name": "Purple",
+        "name": "Royal Sass",
+        "color": "#800080",
+        "reason": "Dripping with regal confidence, this purple object knows it's the main character.",
+        "icon": "👑"
     },
     {
-        "name": "Stoic Indifference",
-        "color": "#280303",
-        "reason": "It has seen too much to care about petty human affairs.",
-        "icon": "😑"
+        "color_name": "Orange",
+        "name": "Zesty Zeal",
+        "color": "#F6560D",
+        "reason": "As an orange object, it's filled with a tangy, can-do attitude and is ready for anything!",
+        "icon": "🍊"
     },
     {
-        "name": "Existential Dread",
-        "color": "#346280",
-        "reason": "It contemplates its inevitable obsolescence and decay.",
-        "icon": "😱"
+        "color_name": "Black",
+        "name": "Infinite Void Mood",
+        "color": "#746E6E", 
+        "reason": "This black object is embracing the abyss. It's not sad, just... minimalistic.",
+        "icon": "🖤"
     },
     {
-        "name": "Apathetic Disgust",
-        "color": "#BA3C6E",
-        "reason": "It finds the concept of 'emotion' rather tiresome.",
-        "icon": "🙄"
-    },
-    {
-        "name": "Sudden Realization",
-        "color": "#C42F47",
-        "reason": "It just figured out where the missing sock went.",
-        "icon": "💡"
-    },
-    {
-        "name": "Over-Padded Complacency",
-        "color": "#2EC3A3",
-        "reason": "It's a fluffy cushion, and its life's purpose has been fulfilled.",
-        "icon": "😌"
-    },
-    {
-        "name": "Floor-Bound Envy",
-        "color": "#CFE410",
-        "reason": "As a rug, it longs to stand tall like the furniture it supports.",
-        "icon": "😠"
-    },
-    {
-        "name": "Vertical Exhaustion",
-        "color": "#8B4513",
-        "reason": "It's a bookshelf carrying the weight of a thousand stories and is utterly spent.",
-        "icon": "😩"
-    },
-    {
-        "name": "Battery-Based Desperation",
-        "color": "#D3D3D3",
-        "reason": "It's a remote control with only 5% power remaining.",
-        "icon": "🔋"
-    },
-    {
-        "name": "Wi-Fi Seeking Anguish",
-        "color": "#4169E1",
-        "reason": "It’s a smart speaker that just lost its connection to the internet.",
-        "icon": "😭"
-    },
-    {
-        "name": "Glitchy Optimism",
-        "color": "#A50ED7",
-        "reason": "It’s a blinking light on an old device, hoping it won’t fail this time.",
-        "icon": "🤞"
-    },
-    {
-        "name": "Pre-Washing Dread",
-        "color": "#708090",
-        "reason": "As a dirty dish, it knows what's coming and it's not looking forward to it.",
+        "color_name": "White",
+        "name": "Blank Canvas Panic",
+        "color": "#FFFFFF",
+        "reason": "As a white object, it's overwhelmed by the infinite possibilities of what it could become.",
         "icon": "😬"
     },
     {
-        "name": "Microwave-Induced Paranoia",
-        "color": "#FFD700",
-        "reason": "It's a plastic container that's been in the microwave for too long and is now a little anxious.",
-        "icon": "😳"
+        "color_name": "Brown",
+        "name": "Earthy Comfort",
+        "color": "#8B4513",
+        "reason": "Grounded and stable, this brown object is feeling as cozy as a warm cup of coffee.",
+        "icon": "☕"
     },
     {
-        "name": "Flavorless Indifference",
-        "color": "#FFF8DC",
-        "reason": "It’s a salt shaker that is completely empty.",
-        "icon": "😑"
-    },
-    {
-        "name": "Perpetual Penance",
-        "color": "#696969",
-        "reason": "It’s a tiny paperclip holding a stack of 100 pages together.",
-        "icon": "🙏"
-    },
-    {
-        "name": "Stapler-Induced Anxiety",
-        "color": "#FF6347",
-        "reason": "It's a piece of paper that just got stapled and is now permanently attached to its fate.",
-        "icon": "😰"
-    },
-    {
-        "name": "Lost-and-Found Hope",
-        "color": "#D2691E",
-        "reason": "It's a single shoe in the corner, holding out for its long-lost partner.",
-        "icon": "🥺"
-    },
-    {
-        "name": "Garden-Gnome-Like Patience",
-        "color": "#32CD32",
-        "reason": "As a potted plant, it's just patiently waiting for sunlight and water.",
-        "icon": "🧘"
-    },
-    {
-        "name": "Existential Dread of a Loose Thread",
-        "color": "#800080",
-        "reason": "It's a shirt that just noticed a loose thread and is worried about unraveling.",
-        "icon": "😱"
-    },
-    {
-        "name": "Quiet Rebellion",
-        "color": "#A9A9A9",
-        "reason": "It's a remote control refusing to work for no good reason.",
-        "icon": "😠"
+        "color_name": "Pink",
+        "name": "Fabulous Flirt",
+        "color": "#FF69B4",
+        "reason": "This pink object is feeling cute, confident, and is serving looks.",
+        "icon": "💅"
     }
 ]
 
-#class to handle video capture in a separate thread
-class VideoThread(QThread):
-    change_pixmap_signal = pyqtSignal(QPixmap)
+#centralized color detection HSV ranges and thresholds
+COLOR_DEFINITIONS = [
+    {"name": "Red", "lower": [np.array([0, 120, 70]), np.array([160, 120, 70])], "upper": [np.array([10, 255, 255]), np.array([179, 255, 255])], "threshold": 5000},
+    {"name": "Yellow", "lower": [np.array([20, 100, 100])], "upper": [np.array([40, 255, 255])], "threshold": 5000},
+    {"name": "Green", "lower": [np.array([40, 40, 40])], "upper": [np.array([80, 255, 255])], "threshold": 5000},
+    {"name": "Blue", "lower": [np.array([100, 150, 0])], "upper": [np.array([140, 255, 255])], "threshold": 5000},
+    {"name": "Purple", "lower": [np.array([125, 50, 50])], "upper": [np.array([155, 255, 255])], "threshold": 5000},
+    {"name": "Orange", "lower": [np.array([5, 100, 100])], "upper": [np.array([25, 255, 255])], "threshold": 5000},
+    {"name": "Black", "lower": [np.array([0, 0, 0])], "upper": [np.array([180, 255, 60])], "threshold": 100000},
+    {"name": "White", "lower": [np.array([0, 0, 180])], "upper": [np.array([180, 45, 255])], "threshold": 15000},
+    {"name": "Brown", "lower": [np.array([10, 100, 20])], "upper": [np.array([25, 255, 200])], "threshold": 5000},
+    {"name": "Pink", "lower": [np.array([140, 80, 80])], "upper": [np.array([170, 255, 255])], "threshold": 5000},
 
-    def run(self):
-        self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            return
-        
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-        while True:
-            ret, frame = self.cap.read()
-            if ret:
-                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb_image.shape
-                bytes_per_line = ch * w
-                convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-                p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
-                self.change_pixmap_signal.emit(QPixmap.fromImage(p))
-            time.sleep(0.03)
+]
