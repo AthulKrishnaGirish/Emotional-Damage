@@ -2,7 +2,7 @@ import sys
 import cv2
 import random
 import numpy as np
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from PyQt6.QtCore import QThread, pyqtSignal, QTimer, Qt
 from PyQt6.QtGui import QImage, QPixmap, QFont
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
@@ -15,7 +15,7 @@ EMOTION_PROFILES = [
     {
         "color_name": "Red",
         "name": "Fiery Passion",
-        "color": "#FF2400",
+        "color": "#FD0000",
         "reason": "As a red object, it's bursting with raw, untamed energy and excitement!",
         "icon": "🔥"
     },
@@ -57,7 +57,7 @@ EMOTION_PROFILES = [
     {
         "color_name": "Black",
         "name": "Infinite Void Mood",
-        "color": "#746E6E", 
+        "color": "#A58888", 
         "reason": "This black object is embracing the abyss. It's not sad, just... minimalistic.",
         "icon": "🖤"
     },
@@ -81,6 +81,111 @@ EMOTION_PROFILES = [
         "color": "#FF69B4",
         "reason": "This pink object is feeling cute, confident, and is serving looks.",
         "icon": "💅"
+    },
+    {
+        "color_name": "Teal",
+        "name": "Uncertainty",
+        "color": "#008080",
+        "reason": "It's too cool for primary colors but is having an identity crisis about whether it's more blue or green.",
+        "icon": "🧐"
+    },
+    {
+        "color_name": "Magenta",
+        "name": "Unapologetic",
+        "color": "#FF00FF",
+        "reason": "This magenta object demands attention and has no time for subtlety. It's the main character.",
+        "icon": "💃"
+    },
+    {
+        "color_name": "Lime Green",
+        "name": "Chaos",
+        "color": "#0585C0",
+        "reason": "Fueled by pure energy, this lime green object is vibrating at a frequency only dogs can hear.",
+        "icon": "🔋"
+    },
+    {
+        "color_name": "Maroon",
+        "name": "Grandeur",
+        "color": "#800000",
+        "reason": "This maroon object has seen things and is silently judging your modern life choices. It prefers a good book to your TikToks.",
+        "icon": "🍷"
+    },
+    {
+        "color_name": "Navy Blue",
+        "name": "Corporate Composure",
+        "color": "#000080",
+        "reason": "This navy blue object has a 9 AM meeting and a five-year plan. It's stable, reliable, and a little bit boring.",
+        "icon": "👔"
+    },
+    {
+        "color_name": "Gold",
+        "name": "Opulent Overkill",
+        "color": "#FFD700",
+        "reason": "Feeling excessively fancy, this gold object believes 'more is more' and is probably about to drop a mixtape.",
+        "icon": "🤑"
+    },
+    {
+        "color_name": "Silver",
+        "name": "Futuristic Aloofness",
+        "color": "#C0C0C0",
+        "reason": "As a silver object, it's living in the year 3025. It finds your current technology quaint and slightly pathetic.",
+        "icon": "🤖"
+    },
+    {
+        "color_name": "Beige",
+        "name": "Neutrality",
+        "color": "#F5F5DC",
+        "reason": "This beige object has achieved a level of zen where it feels absolutely nothing about anything. It's the Switzerland of colors.",
+        "icon": "😐"
+    },
+    {
+        "color_name": "Cyan",
+        "name": "Digital Daydream",
+        "color": "#00FFFF",
+        "reason": "This cyan object's brain is 90% memes and 10% Wi-Fi signals. It lives in the cloud and feels electrifyingly online.",
+        "icon": "🌐"
+    },
+    {
+        "color_name": "Lavender",
+        "name": "Sleepy Serenity",
+        "color": "#E6E6FA",
+        "reason": "This lavender object is feeling soft, gentle, and is approximately two minutes away from taking a nap in a sunbeam.",
+        "icon": "😴"
+    },
+    {
+        "color_name": "Olive Green",
+        "name": "Survivalist Spirit",
+        "color": "#808000",
+        "reason": "Practical and rugged, this olive object is prepared for the apocalypse and thinks your decorative pillows are a waste of resources.",
+        "icon": "🏕️"
+    },
+    {
+        "color_name": "Turquoise",
+        "name": "Vacation Vibes",
+        "color": "#40E0D0",
+        "reason": "This turquoise object is mentally on a tropical beach, sipping something cold, and has its 'out of office' email reply on.",
+        "icon": "🏖️"
+    },
+    {
+        "color_name": "Coral",
+        "name": "Peppy & Preppy",
+        "color": "#FF7F50",
+        "reason": "This coral object is feeling cheerful, sociable, and is probably on its way to brunch with the girls.",
+        "icon": "🍹"
+    },
+    {
+        "color_name": "Indigo",
+        "name": "Moodiness",
+        "color": "#4B0082",
+        "reason": "This indigo object is staring into the cosmos, pondering deep thoughts, and might just be able to see your aura.",
+        "icon": "🔮"
+    },
+    {
+        "color_name": "Charcoal Gray",
+        "name": " Melancholy",
+        "color": "#36454F",
+        "reason": "Sleek and sophisticated, this charcoal object appreciates clean lines and feels a deep, artistic sadness about clutter.",
+        "icon": "🏛️"
     }
 ]
 
@@ -96,7 +201,22 @@ COLOR_DEFINITIONS = [
     {"name": "White", "lower": [np.array([0, 0, 180])], "upper": [np.array([180, 45, 255])], "threshold": 15000},
     {"name": "Brown", "lower": [np.array([10, 100, 20])], "upper": [np.array([25, 255, 200])], "threshold": 5000},
     {"name": "Pink", "lower": [np.array([140, 80, 80])], "upper": [np.array([170, 255, 255])], "threshold": 5000},
+]
 
+# Funny taglines for the loading button
+LOADING_TAGLINES = [
+    "Rummaging through feelings...",
+    "Consulting the emotional ether...",
+    "Calibrating the drama-detector...",
+    "Translating toaster turmoil...",
+    "Detecting deep-seated despair...",
+    "Accessing angst...",
+    "Scanning for sass...",
+    "Gauging grape grievances...",
+    "Unpacking existential dread...",
+    "Probing for passion...",
+    "Measuring moodiness...",
+    "Checking the vibe..."
 ]
 
 # Video capture thread
@@ -121,16 +241,15 @@ class VideoThread(QThread):
                 convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
                 p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
                 self.change_pixmap_signal.emit(QPixmap.fromImage(p), frame)
-            time.sleep(0.03)         # limiting frame rate to ~30 FPS
+            time.sleep(0.03)        # limiting frame rate to ~30 FPS
 
 #application GUI
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
-       
+        
         self.setWindowTitle("EMOTIONAL DAMAGE")
-       
-
+        
         self.setGeometry(100, 100, 1300, 800)
         self.current_frame = None
 
@@ -189,7 +308,7 @@ class App(QMainWindow):
         self.right_layout.addStretch()
 
         # Scan button
-        self.scan_button = QPushButton("REVEAL  EMOTION!", self)
+        self.scan_button = QPushButton("REVEAL EMOTION!", self)
         self.scan_button.setFont(QFont("Bookman Old Style", 28, QFont.Weight.Bold))
         self.scan_button.setStyleSheet("""
             QPushButton {
@@ -212,7 +331,7 @@ class App(QMainWindow):
         self.right_layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
         self.right_layout.addStretch()
 
-# Starting Video thread
+        # Starting Video thread
         self.thread = VideoThread()
         self.thread.change_pixmap_signal.connect(self.update_live_feed)
         self.thread.start()
@@ -222,7 +341,7 @@ class App(QMainWindow):
         self.current_frame = frame
 
     def detect_emotion(self, frame):
-       
+        
         if frame is None:
             return None
 
@@ -245,12 +364,25 @@ class App(QMainWindow):
         return None # if no dominant color detected
 
     def scan_emotion(self):
+        """Starts the 'analyzing' delay and shows a random tagline."""
+        self.scan_button.setEnabled(False)
+        
+        # Picking and setting a random funny tagline
+        random_tagline = random.choice(LOADING_TAGLINES)
+        self.scan_button.setText(random_tagline)
+        
+        # Calls the helper function after 2 seconds
+        QTimer.singleShot(2000, self._process_and_display_emotion)
+
+    def _process_and_display_emotion(self):
+        """This function runs after the timer and updates the UI with the result."""
         if self.current_frame is None:
+            self.scan_button.setEnabled(True)
+            self.scan_button.setText("REVEAL EMOTION!")
             return
 
         detected_emotion = self.detect_emotion(self.current_frame)
         
-        # If no specific color is detected, picking a random emotion
         if detected_emotion is None:
             chosen_emotion = random.choice(EMOTION_PROFILES)
             self.emotion_label.setText(f"Feeling Random! {chosen_emotion['name']}")
@@ -264,6 +396,9 @@ class App(QMainWindow):
         self.reason_label.setStyleSheet(f"color: {chosen_emotion['color']}; background-color: transparent; border: none; padding: 15px;")
         self.icon_label.setText(chosen_emotion['icon'])
         
+        # Restoring the button to its original state
+        self.scan_button.setEnabled(True)
+        self.scan_button.setText("REVEAL EMOTION!")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
