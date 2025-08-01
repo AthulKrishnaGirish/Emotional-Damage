@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import random
 import numpy as np
 
+#list of emotions
 emotions = [
     {
         "name": "Zen Tranquility",
@@ -144,5 +145,14 @@ emotions = [
         "reason": "It's a remote control refusing to work for no good reason.",
         "icon": "😠"
     }
-
 ]
+
+#initializing camera setup
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    print("Error: Could not open video device.")
+    exit()
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
