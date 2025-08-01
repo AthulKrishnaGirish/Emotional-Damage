@@ -1,9 +1,14 @@
+import sys
 import cv2
-import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
 import random
 import numpy as np
+from PyQt6.QtCore import QThread, pyqtSignal, QTimer, Qt
+from PyQt6.QtGui import QImage, QPixmap, QFont
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout,
+    QHBoxLayout, QLabel, QPushButton, QGridLayout
+)
+import time
 
 #list of emotions
 emotions = [
@@ -147,12 +152,25 @@ emotions = [
     }
 ]
 
-#initializing camera setup
-cap = cv2.VideoCapture(0)
+#class to handle video capture in a separate thread
+class VideoThread(QThread):
+    change_pixmap_signal = pyqtSignal(QPixmap)
 
-if not cap.isOpened():
-    print("Error: Could not open video device.")
-    exit()
+    def run(self):
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            return
+        
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        while True:
+            ret, frame = self.cap.read()
+            if ret:
+                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb_image.shape
+                bytes_per_line = ch * w
+                convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+                p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
+                self.change_pixmap_signal.emit(QPixmap.fromImage(p))
+            time.sleep(0.03)
