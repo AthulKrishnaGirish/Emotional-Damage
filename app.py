@@ -122,3 +122,94 @@ class VideoThread(QThread):
                 p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
                 self.change_pixmap_signal.emit(QPixmap.fromImage(p), frame)
             time.sleep(0.03)         # limiting frame rate to ~30 FPS
+
+#application GUI
+class App(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        
+       
+        self.setWindowTitle("EMOTIONAL DAMAGE")
+       
+
+        self.setGeometry(100, 100, 1300, 800)
+        self.current_frame = None
+
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        self.main_layout = QHBoxLayout(self.central_widget)
+        self.setStyleSheet("background-color: #333333; color: white;")
+
+        # Left side: live feed
+        self.live_feed_label = QLabel(self)
+        self.main_layout.addWidget(self.live_feed_label, 1) # Give it a stretch factor of 1
+        self.live_feed_label.setStyleSheet("border: 5px solid #FFFF00; background-color: black;")
+        
+        # Right side: results and Ccontrols
+        self.right_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.right_layout, 1) # Give it a stretch factor of 1
+
+        # Title label
+        title_label = QLabel("EMOTIONAL DAMAGE", self)
+        title_label.setFont(QFont("Comic Sans MS", 28, QFont.Weight.Bold))
+        title_label.setStyleSheet("color: #00FFFF; background-color: transparent; padding: 10px; text-shadow: 3px 3px #000000;")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.right_layout.addWidget(title_label)
+
+        # Emotion name label
+        self.emotion_label = QLabel("👇 SCAN AN OBJECT! 👇", self)
+        self.emotion_label.setFont(QFont("Comic Sans MS", 36, QFont.Weight.Bold))
+        self.emotion_label.setStyleSheet("color: #FFFFFF; background-color: transparent; border: none; padding: 10px; text-shadow: 2px 2px black;")
+        self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.right_layout.addWidget(self.emotion_label)
+
+        # Emotion icon
+        self.icon_label = QLabel("🤔", self)
+        self.icon_label.setFont(QFont("Segoe UI Emoji", 80))
+        self.icon_label.setStyleSheet("background-color: transparent; border: none; padding-top: 10px;")
+        self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.right_layout.addWidget(self.icon_label)
+
+        # Reason label
+        self.reason_label = QLabel("Point the camera at a colorful object and hit the big red button to analyze its feelings.", self)
+        self.reason_label.setFont(QFont("Comic Sans MS", 20))
+        self.reason_label.setStyleSheet("color: #DDDDDD; background-color: transparent; border: none; padding: 15px;")
+        self.reason_label.setWordWrap(True)
+        self.reason_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.right_layout.addWidget(self.reason_label)
+
+        funny_tagline = QLabel("Oh, humans think *they* invented feelings? My toaster is having an existential crisis about being buttered unevenly.", self)
+        italic_font = QFont("Comic Sans MS", 16)
+        italic_font.setItalic(True)
+        funny_tagline.setFont(italic_font)
+        funny_tagline.setStyleSheet("color: #A9A9A9; background-color: transparent; border: none; padding: 10px;")
+        funny_tagline.setWordWrap(True)
+        funny_tagline.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.right_layout.addWidget(funny_tagline)
+        self.right_layout.addStretch()
+
+        # Scan button
+        self.scan_button = QPushButton("REVEAL EMOTION!", self)
+        self.scan_button.setFont(QFont("Comic Sans MS", 28, QFont.Weight.Bold))
+        self.scan_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FF0000; 
+                color: white; 
+                padding: 20px 30px; 
+                border: 3px solid #FFFF00;
+                border-radius: 15px; 
+                margin: 20px;
+                text-shadow: 2px 2px #000000;
+            }
+            QPushButton:hover {
+                background-color: #CC0000;
+            }
+            QPushButton:pressed {
+                background-color: #990000;
+            }
+        """)
+        self.scan_button.clicked.connect(self.scan_emotion)
+        self.right_layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        self.right_layout.addStretch()
