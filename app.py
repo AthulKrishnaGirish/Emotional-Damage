@@ -127,7 +127,6 @@ class VideoThread(QThread):
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
-        
        
         self.setWindowTitle("EMOTIONAL DAMAGE")
        
@@ -152,14 +151,14 @@ class App(QMainWindow):
 
         # Title label
         title_label = QLabel("EMOTIONAL DAMAGE", self)
-        title_label.setFont(QFont("Comic Sans MS", 28, QFont.Weight.Bold))
+        title_label.setFont(QFont("Century Gothic", 36, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #00FFFF; background-color: transparent; padding: 10px; text-shadow: 3px 3px #000000;")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.right_layout.addWidget(title_label)
 
         # Emotion name label
         self.emotion_label = QLabel("👇 SCAN AN OBJECT! 👇", self)
-        self.emotion_label.setFont(QFont("Comic Sans MS", 36, QFont.Weight.Bold))
+        self.emotion_label.setFont(QFont("Gill Sans", 36, QFont.Weight.Bold))
         self.emotion_label.setStyleSheet("color: #FFFFFF; background-color: transparent; border: none; padding: 10px; text-shadow: 2px 2px black;")
         self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.right_layout.addWidget(self.emotion_label)
@@ -172,14 +171,14 @@ class App(QMainWindow):
         self.right_layout.addWidget(self.icon_label)
 
         # Reason label
-        self.reason_label = QLabel("Point the camera at a colorful object and hit the big red button to analyze its feelings.", self)
-        self.reason_label.setFont(QFont("Comic Sans MS", 20))
+        self.reason_label = QLabel("Point the camera at a colorful object and hit the button to analyze its feelings.", self)
+        self.reason_label.setFont(QFont("Garamond", 20))
         self.reason_label.setStyleSheet("color: #DDDDDD; background-color: transparent; border: none; padding: 15px;")
         self.reason_label.setWordWrap(True)
         self.reason_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.right_layout.addWidget(self.reason_label)
 
-        funny_tagline = QLabel("Oh, humans think *they* invented feelings? My toaster is having an existential crisis about being buttered unevenly.", self)
+        funny_tagline = QLabel("AI: Oh, humans think *they* invented feelings? My algorithm is having an existential crisis about being traumatized unevenly.", self)
         italic_font = QFont("Comic Sans MS", 16)
         italic_font.setItalic(True)
         funny_tagline.setFont(italic_font)
@@ -190,8 +189,8 @@ class App(QMainWindow):
         self.right_layout.addStretch()
 
         # Scan button
-        self.scan_button = QPushButton("REVEAL EMOTION!", self)
-        self.scan_button.setFont(QFont("Comic Sans MS", 28, QFont.Weight.Bold))
+        self.scan_button = QPushButton("REVEAL  EMOTION!", self)
+        self.scan_button.setFont(QFont("Bookman Old Style", 28, QFont.Weight.Bold))
         self.scan_button.setStyleSheet("""
             QPushButton {
                 background-color: #FF0000; 
@@ -211,5 +210,63 @@ class App(QMainWindow):
         """)
         self.scan_button.clicked.connect(self.scan_emotion)
         self.right_layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
-        
         self.right_layout.addStretch()
+
+# Starting Video thread
+        self.thread = VideoThread()
+        self.thread.change_pixmap_signal.connect(self.update_live_feed)
+        self.thread.start()
+
+    def update_live_feed(self, pixmap, frame):
+        self.live_feed_label.setPixmap(pixmap)
+        self.current_frame = frame
+
+    def detect_emotion(self, frame):
+       
+        if frame is None:
+            return None
+
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        for color_def in COLOR_DEFINITIONS:
+            # Handling multiple ranges 
+            total_mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+            for i in range(len(color_def["lower"])):
+                mask = cv2.inRange(hsv_frame, color_def["lower"][i], color_def["upper"][i])
+                total_mask = cv2.bitwise_or(total_mask, mask)
+
+            # Checking if the number of detected pixels exceeds the threshold
+            if np.sum(total_mask > 0) > color_def["threshold"]:
+                # Finding the corresponding emotion profile
+                for emotion in EMOTION_PROFILES:
+                    if emotion['color_name'] == color_def['name']:
+                        return emotion
+        
+        return None # if no dominant color detected
+
+    def scan_emotion(self):
+        if self.current_frame is None:
+            return
+
+        detected_emotion = self.detect_emotion(self.current_frame)
+        
+        # If no specific color is detected, picking a random emotion
+        if detected_emotion is None:
+            chosen_emotion = random.choice(EMOTION_PROFILES)
+            self.emotion_label.setText(f"Feeling Random! {chosen_emotion['name']}")
+        else:
+            chosen_emotion = detected_emotion
+            self.emotion_label.setText(f"{chosen_emotion['icon']} {chosen_emotion['name']}")
+
+        # Updating the GUI elements with the chosen emotion's data
+        self.emotion_label.setStyleSheet(f"color: {chosen_emotion['color']}; text-shadow: 3px 3px black; padding: 10px;")
+        self.reason_label.setText(chosen_emotion['reason'])
+        self.reason_label.setStyleSheet(f"color: {chosen_emotion['color']}; background-color: transparent; border: none; padding: 15px;")
+        self.icon_label.setText(chosen_emotion['icon'])
+        
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = App()
+    window.show()
+    sys.exit(app.exec())
