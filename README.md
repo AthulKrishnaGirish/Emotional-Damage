@@ -33,7 +33,7 @@ Frameworks used:
 Libraries Used:
  - NumPy: A fundamental library for scientific computing, used here specifically to create the arrays that define the HSV color ranges for detection.
  - Python Standard Libraries: Also used several built-in libraries, including sys (for system-specific parameters), random (to choose loading taglines     and random emotions), and time (to pause the video thread).
-
+ - Also used Libraries such as MobileNetSSD_deploy.protxt.txt and MobileNetSSD_deploy.caffemodel for detecting the colour tones in the image through Web cam.
    
 Tools used:
   - pip: The package installer for Python, used to install the external libraries (PyQt6, opencv-python, numpy).
