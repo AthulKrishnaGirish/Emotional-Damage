@@ -139,13 +139,6 @@ EMOTION_PROFILES = [
         "icon": "😐"
     },
     {
-        "color_name": "Cyan",
-        "name": "Digital Daydream",
-        "color": "#00FFFF",
-        "reason": "This cyan object's brain is 90% memes and 10% Wi-Fi signals. It lives in the cloud and feels electrifyingly online.",
-        "icon": "🌐"
-    },
-    {
         "color_name": "Lavender",
         "name": "Sleepy Serenity",
         "color": "#E6E6FA",
@@ -268,7 +261,7 @@ class App(QMainWindow):
         self.main_layout.addWidget(self.live_feed_label, 1) # Give it a stretch factor of 1
         self.live_feed_label.setStyleSheet("border: 5px solid #FFFF00; background-color: black;")
         
-        # Right side: results and Ccontrols
+        # Right side: results and controls
         self.right_layout = QVBoxLayout()
         self.main_layout.addLayout(self.right_layout, 1) # Give it a stretch factor of 1
 
