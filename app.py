@@ -192,11 +192,14 @@ EMOTION_PROFILES = [
 #centralized color detection HSV ranges and thresholds
 COLOR_DEFINITIONS = [
     {"name": "Red", "lower": [np.array([0, 120, 70]), np.array([160, 120, 70])], "upper": [np.array([10, 255, 255]), np.array([179, 255, 255])], "threshold": 5000},
-    {"name": "Yellow", "lower": [np.array([20, 100, 100])], "upper": [np.array([40, 255, 255])], "threshold": 5000},
-    {"name": "Green", "lower": [np.array([40, 40, 40])], "upper": [np.array([80, 255, 255])], "threshold": 5000},
-    {"name": "Blue", "lower": [np.array([100, 150, 0])], "upper": [np.array([140, 255, 255])], "threshold": 5000},
-    {"name": "Purple", "lower": [np.array([125, 50, 50])], "upper": [np.array([155, 255, 255])], "threshold": 5000},
-    {"name": "Orange", "lower": [np.array([5, 100, 100])], "upper": [np.array([25, 255, 255])], "threshold": 5000},
+    {"name": "Orange", "lower": [np.array([11, 100, 100])], "upper": [np.array([19, 255, 255])], "threshold": 5000},
+    {"name": "Yellow", "lower": [np.array([20, 100, 100])], "upper": [np.array([30, 255, 255])], "threshold": 5000},
+    {"name": "Lime Green", "lower": [np.array([31, 100, 100])], "upper": [np.array([70, 255, 255])], "threshold": 5000},
+    {"name": "Green", "lower": [np.array([40, 40, 40])], "upper": [np.array([85, 255, 255])], "threshold": 5000},
+    {"name": "Cyan", "lower": [np.array([86, 150, 50])], "upper": [np.array([100, 255, 255])], "threshold": 5000},
+    {"name": "Blue", "lower": [np.array([101, 150, 0])], "upper": [np.array([125, 255, 255])], "threshold": 5000},
+    {"name": "Purple", "lower": [np.array([126, 50, 50])], "upper": [np.array([155, 255, 255])], "threshold": 5000},
+    {"name": "Magenta", "lower": [np.array([156, 50, 50])], "upper": [np.array([175, 255, 255])], "threshold": 5000},
     {"name": "Black", "lower": [np.array([0, 0, 0])], "upper": [np.array([180, 255, 60])], "threshold": 100000},
     {"name": "White", "lower": [np.array([0, 0, 180])], "upper": [np.array([180, 45, 255])], "threshold": 15000},
     {"name": "Brown", "lower": [np.array([10, 100, 20])], "upper": [np.array([25, 255, 200])], "threshold": 5000},
@@ -222,11 +225,12 @@ LOADING_TAGLINES = [
 # Video capture thread
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(QPixmap, np.ndarray)
+    camera_error_signal = pyqtSignal(str)
 
     def run(self):
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-            print("Error: Could not open camera.")
+            self.camera_error_signal.emit("Camera not found! Please connect a camera and restart.")
             return
         
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -241,7 +245,7 @@ class VideoThread(QThread):
                 convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
                 p = convert_to_qt_format.scaled(640, 480, Qt.AspectRatioMode.KeepAspectRatio)
                 self.change_pixmap_signal.emit(QPixmap.fromImage(p), frame)
-            time.sleep(0.03)        # limiting frame rate to ~30 FPS
+            time.sleep(0.03)
 
 #application GUI
 class App(QMainWindow):
@@ -364,7 +368,6 @@ class App(QMainWindow):
         return None # if no dominant color detected
 
     def scan_emotion(self):
-        """Starts the 'analyzing' delay and shows a random tagline."""
         self.scan_button.setEnabled(False)
         
         # Picking and setting a random funny tagline
@@ -375,7 +378,6 @@ class App(QMainWindow):
         QTimer.singleShot(2000, self._process_and_display_emotion)
 
     def _process_and_display_emotion(self):
-        """This function runs after the timer and updates the UI with the result."""
         if self.current_frame is None:
             self.scan_button.setEnabled(True)
             self.scan_button.setText("REVEAL EMOTION!")
